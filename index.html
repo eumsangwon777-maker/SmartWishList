@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>의류 필요성 기반 스마트 위시리스트</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-sub: #94a3b8;
+            --accent: #38bdf8;
+            --accent-hover: #0ea5e9;
+            --danger: #f43f5e;
+            --danger-hover: #e11d48;
+            --border-color: #334155;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .app-container {
+            width: 100%;
+            max-width: 480px;
+            background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+            border-radius: 32px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            padding: 24px;
+            box-sizing: border-box;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .dashboard {
+            background: rgba(56, 189, 248, 0.1);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            border-radius: 20px;
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .dashboard .title {
+            font-size: 11px;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+        }
+
+        .dashboard .budget-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+
+        .dashboard .budget {
+            font-size: 24px;
+            font-weight: 800;
+        }
+
+        .dashboard .recommend {
+            font-size: 12px;
+            color: var(--text-sub);
+            line-height: 1.4;
+        }
+
+        .dashboard .recommend strong {
+            color: #fde047;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sort-btn {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-sub);
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .sort-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .wish-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 380px;
+            overflow-y: auto;
+        }
+
+        .wish-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .wish-card.selected {
+            border-color: var(--accent);
+            background: linear-gradient(145deg, #1e293b, #1e3a8a);
+        }
+
+        .card-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .card-tag-row {
+            display: flex;
+            gap: 6px;
+        }
+
+        .badge-cat { background-color: #334155; color: var(--text-main); font-size: 11px; padding: 2px 8px; border-radius: 6px; }
+        .badge-tag { background-color: rgba(56, 189, 248, 0.15); color: var(--accent); font-size: 11px; padding: 2px 8px; border-radius: 6px; }
+        .item-name { font-size: 16px; font-weight: 600; margin-top: 4px; }
+        .item-price { font-size: 14px; color: var(--text-sub); }
+
+        .card-score {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 8px 12px;
+            min-width: 45px;
+        }
+
+        .score-val { font-size: 18px; font-weight: 800; color: #fde047; }
+        .score-txt { font-size: 9px; color: var(--text-sub); margin-top: 2px; }
+
+        .action-bar { display: flex; gap: 10px; }
+        .btn { flex: 1; padding: 14px; border-radius: 14px; font-size: 14px; font-weight: 600; border: none; cursor: pointer; }
+        .btn-add { background-color: var(--accent); color: #0f172a; }
+        .btn-del { background-color: rgba(244, 63, 94, 0.1); color: var(--danger); border: 1px solid rgba(244, 63, 94, 0.2); }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            justify-content: center;
+            align-items: flex-end;
+            z-index: 999;
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            padding: 24px;
+            width: 100%;
+            max-width: 480px;
+            border-radius: 24px 24px 0 0;
+            box-sizing: border-box;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .form-group { margin-bottom: 14px; }
+        .form-group label { display: block; font-size: 12px; color: var(--text-sub); margin-bottom: 6px; }
+        .form-group input, .form-group select {
+            width: 100%; padding: 10px 14px; background-color: var(--bg-color);
+            border: 1px solid var(--border-color); border-radius: 10px; color: var(--text-main); font-size: 14px; box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <div class="dashboard" onclick="openBudgetModal()">
+            <div class="title">이번 달 남은 쇼핑 예산</div>
+            <div class="budget-wrapper">
+                <div class="budget" id="budgetText">150,000 원</div>
+                <div style="font-size:14px; color:var(--accent);">✏️</div>
+            </div>
+            <div class="recommend">추천: 지금 가장 필요한 옷은<br><strong>'검정 슬랙스'</strong>입니다.</div>
+        </div>
+
+        <div class="section-header">
+            <h3>위시리스트 AI 판단</h3>
+            <button class="sort-btn" onclick="toggleSort()">필요성 높은순 ⬇️⬆️</button>
+        </div>
+
+        <div class="wish-list" id="cardList">
+            <div class="wish-card" onclick="selectCard(this)">
+                <div class="card-info">
+                    <div class="card-tag-row"><span class="badge-cat">하의</span><span class="badge-tag">스트릿</span></div>
+                    <div class="item-name">와이드 데님 팬츠</div>
+                    <div class="item-price">45,000원</div>
+                </div>
+                <div class="card-score"><span class="score-val" data-score="9.5">9.5</span><span class="score-txt">AI 평가</span></div>
+            </div>
+        </div>
+
+        <div class="action-bar">
+            <button class="btn btn-add" onclick="openModal()">새 위시리스트 추가</button>
+            <button class="btn btn-del" onclick="deleteCard()">선택 삭제</button>
+        </div>
+    </div>
+
+    <!-- 아이템 추가 모달 -->
+    <div id="addModal" class="modal">
+        <div class="modal-content">
+            <h3 style="margin-top:0;">🤖 AI 스마트 필요성 검사</h3>
+            
+            <div class="form-group">
+                <label>카테고리</label>
+                <input type="text" id="categoryInput" placeholder="예: 상의, 하의, 아우터">
+            </div>
+            <div class="form-group">
+                <label>상품명</label>
+                <input type="text" id="nameInput" placeholder="예: 버뮤다 팬츠">
+            </div>
+            <div class="form-group">
+                <label>가격 (원)</label>
+                <input type="text" id="priceInput" placeholder="예: 39000">
+            </div>
+            <div class="form-group">
+                <label>스타일 태그</label>
+                <input type="text" id="tagInput" placeholder="예: 캐주얼, 스트릿">
+            </div>
+
+            <hr style="border:0; border-top:1px solid var(--border-color); margin:20px 0;">
+            <p style="font-size:13px; color:var(--accent); font-weight:bold; margin-bottom:10px;">👇 여기서부터 앱이 필요성을 분석합니다</p>
+
+            <div class="form-group">
+                <label>🤔 질문 1. 옷장에 이와 비슷한 옷이 이미 있나요?</label>
+                <select id="q1">
+                    <option value="5">하나도 없다 (완전 새로움)</option>
+                    <option value="4">비슷한 색상은 있지만 핏이 다르다</option>
+                    <option value="3">거의 똑같은 게 한 벌 있다</option>
+                    <option value="1">색상별, 종류별로 이미 많다</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>📅 질문 2. 일주일에 몇 번이나 입을 것 같나요?</label>
+                <select id="q2">
+                    <option value="5">주 3회 이상 자주 입음 (전천후 데일리)</option>
+                    <option value="4">주 1~2회 정도 주말이나 특정 약속 때</option>
+                    <option value="2">한 달에 1~2번 특별한 날에만</option>
+                    <option value="1">일 년에 몇 번 입을까 말까 한 특이한 옷</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>⏳ 질문 3. 내년 이맘때 유행 안 타고 또 입을 수 있나요?</label>
+                <select id="q3">
+                    <option value="5">유행 절대 안 타는 기본 템이다</option>
+                    <option value="3">한 시즌 반짝 유행할 것 같지만 이쁘다</option>
+                    <option value="1">지금 아니면 절대 못 입는 완전 난해한 트렌드</option>
+                </select>
+            </div>
+
+            <div class="action-bar" style="margin-top:20px;">
+                <button class="btn btn-add" onclick="addWishItem()">AI 진단 및 추가</button>
+                <button class="btn btn-del" style="background:#334155; color:white; border:none;" onclick="closeModal()">취소</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 예산 설정 모달 -->
+    <div id="budgetModal" class="modal">
+        <div class="modal-content">
+            <h3>이번 달 쇼핑 예산 설정</h3>
+            <div class="form-group">
+                <label>금액 입력 (숫자만)</label>
+                <input type="text" id="budgetInput">
+            </div>
+            <div class="action-bar">
+                <button class="btn btn-add" onclick="updateBudget()">변경 완료</button>
+                <button class="btn btn-del" style="background:#334155; color:white; border:none;" onclick="closeBudgetModal()">취소</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedCardElement = null;
+        let isDescending = true;
+
+        function selectCard(card) {
+            if (selectedCardElement) selectedCardElement.classList.remove('selected');
+            if (selectedCardElement === card) selectedCardElement = null;
+            else { card.classList.add('selected'); selectedCardElement = card; }
+        }
+
+        function openModal() { document.getElementById('addModal').style.display = 'flex'; }
+        function closeModal() {
+            document.getElementById('addModal').style.display = 'none';
+            document.getElementById('categoryInput').value = '';
+            document.getElementById('nameInput').value = '';
+            document.getElementById('priceInput').value = '';
+            document.getElementById('tagInput').value = '';
+        }
+        function openBudgetModal() {
+            document.getElementById('budgetInput').value = document.getElementById('budgetText').innerText.replace(/[^0-9]/g, '');
+            document.getElementById('budgetModal').style.display = 'flex';
+        }
+        function closeBudgetModal() { document.getElementById('budgetModal').style.display = 'none'; }
+        function updateBudget() {
+            const val = document.getElementById('budgetInput').value;
+            if(!val || isNaN(val)) return alert('숫자만 입력해 주세요.');
+            document.getElementById('budgetText').innerText = Number(val).toLocaleString() + ' 원';
+            closeBudgetModal();
+        }
+
+        function addWishItem() {
+            const cat = document.getElementById('categoryInput').value || '기타';
+            const name = document.getElementById('nameInput').value || '이름 없음';
+            let price = document.getElementById('priceInput').value || '0';
+            const tag = document.getElementById('tagInput').value || '기본';
+
+            const score1 = parseFloat(document.getElementById('q1').value);
+            const score2 = parseFloat(document.getElementById('q2').value);
+            const score3 = parseFloat(document.getElementById('q3').value);
+
+            const finalScore = ((score1 + score2 + score3) / 15) * 10;
+
+            if(!price.includes('원')) price = Number(price).toLocaleString() + '원';
+
+            const cardList = document.getElementById('cardList');
+            const newCard = document.createElement('div');
+            newCard.className = 'wish-card';
+            newCard.onclick = function() { selectCard(this); };
+
+            newCard.innerHTML = `
+                <div class="card-info">
+                    <div class="card-tag-row"><span class="badge-cat">${cat}</span><span class="badge-cat" style="background:#0284c7;">${tag}</span></div>
+                    <div class="item-name">${name}</div>
+                    <div class="item-price">${price}</div>
+                </div>
+                <div class="card-score">
+                    <span class="score-val" data-score="${finalScore.toFixed(1)}">${finalScore.toFixed(1)}</span>
+                    <span class="score-txt">AI 평가</span>
+                </div>
+            `;
+
+            cardList.appendChild(newCard);
+            closeModal();
+        }
+
+        function deleteCard() {
+            if (selectedCardElement) { selectedCardElement.remove(); selectedCardElement = null; }
+            else alert("삭제할 카드를 먼저 터치해 주세요.");
+        }
+
+        function toggleSort() {
+            const cardList = document.getElementById('cardList');
+            const cards = Array.from(cardList.getElementsByClassName('wish-card'));
+            isDescending = !isDescending;
+            cards.sort((a, b) => {
+                const sA = parseFloat(a.querySelector('.score-val').getAttribute('data-score'));
+                const sB = parseFloat(b.querySelector('.score-val').getAttribute('data-score'));
+                return isDescending ? sB - sA : sA - sB;
+            });
+            cardList.innerHTML = '';
+            cards.forEach(card => cardList.appendChild(card));
+        }
+    </script>
+</body>
+</html>
